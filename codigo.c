@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include <string.h>
 #include <stdlib.h>
-#define TAM 300
 #define TAM 300
 
 typedef struct nodo1 {
@@ -11,12 +9,6 @@ typedef struct nodo1 {
     struct nodo1 *sig; 
 } TNodo;
 
-typedef struct nodo1 
-{
-    char *identificador_regla;
-    char *produccion;              
-    struct nodo1 *sig; 
-} TNodo;
 typedef struct nodoN {
     char *identificador_regla;
     char **producciones;
@@ -25,36 +17,17 @@ typedef struct nodoN {
 } TNodoNuevo;
 
 TNodo *crea_nodo(char *identificador_regla, char *produccion);
-void inserta_final(TNodo **cab, char *identificaodr_regla, char *produccion);
-TNodo* leer_archivo(char *nombre_archivo);
-void imprime(TNodo *cab);
-TNodo *crea_nodo(char *identificador_regla, char *produccion);
 void inserta_final(TNodo **cab, char *identificador_regla, char *produccion);
 TNodo* leer_archivo(char *nombre_archivo);
 void imprime(TNodo *cab);
 void inserta_finalNuevo(TNodoNuevo **cab, char *identificador_regla, char *produccion);
 void juntar_producciones(TNodo **cab, TNodoNuevo **cabN);
 void eliminar_recursividad(TNodoNuevo **cab1, TNodoNuevo **cab2);
+void convertir_arriba_abajo(TNodoNuevo *cab);
 void liberar_lista(TNodo *cab);
 void liberar_lista_nueva(TNodoNuevo *cab);
 void imprimeNuevo(TNodoNuevo *cab);
 
-int main() 
-{
-    char *nombre_archivo = "gramatica1.txt";
-    TNodo *lista = leer_archivo(nombre_archivo);
-
-    imprime(lista);
-
-    TNodo *temp;
-    while (lista != NULL) 
-    {
-        temp = lista;
-        lista = lista->sig;
-        free(temp->identificador_regla);
-        free(temp->produccion); 
-        free(temp);    
-    }
 int main() {
     char *nombre_archivo = "gramatica2.txt";
     TNodo *lista = leer_archivo(nombre_archivo);
@@ -63,7 +36,6 @@ int main() {
 
     imprime(lista);
     juntar_producciones(&lista, &cabN);
-    printf("Lista:\n");
     imprimeNuevo(cabN);
     eliminar_recursividad(&cabN, &cab2);
     printf("Lista:\n");
@@ -75,14 +47,6 @@ int main() {
     return 0;
 }
 
-TNodo *crea_nodo(char *identificaodr_regla, char *produccion) 
-{
-    TNodo *aux = (TNodo *)malloc(sizeof(TNodo));
-    if (aux) 
-    {
-        aux->identificador_regla = strdup(identificaodr_regla);
-        aux->produccion = strdup(produccion);
-        aux->sig = NULL;
 TNodo *crea_nodo(char *identificador_regla, char *produccion) {
     TNodo *aux = (TNodo *)malloc(sizeof(TNodo));
     if (aux) {
@@ -91,55 +55,8 @@ TNodo *crea_nodo(char *identificador_regla, char *produccion) {
         aux->sig = NULL;
     }
     return aux;
-    return aux;
 }
 
-void inserta_final(TNodo **cab, char *identificador_regla, char *produccion) 
-{
-    TNodo *aux = crea_nodo(identificador_regla, produccion);
-    if (aux) 
-    {
-        if (*cab == NULL) 
-        { 
-            *cab = aux;
-        } 
-        else 
-        {
-            TNodo *corre = *cab;
-            while (corre->sig != NULL) 
-            { 
-                corre = corre->sig;
-            }
-            corre->sig = aux;
-        }
-    }
-}
-
-TNodo* leer_archivo(char *nombre_archivo) 
-{
-    FILE *archivo = fopen(nombre_archivo, "r");
-    if (archivo == NULL) 
-    {
-        perror("Error");
-        exit(EXIT_FAILURE);
-    }
-    TNodo *cabeza = NULL;
-    char linea[TAM];
-    char identificador_regla[TAM];
-    char productor[TAM];
-
-    while (fgets(linea, TAM, archivo)) 
-    {
-        linea[strcspn(linea, "\n")] = '\0';
-        const char *delimitador = strstr(linea, "->");
-        if(delimitador != NULL)
-        {
-            strncpy(identificador_regla, linea, delimitador - linea);
-            identificador_regla[delimitador - linea] = '\0';
-            strcpy(productor, delimitador + 2);
-            inserta_final(&cabeza, identificador_regla, productor); 
-        } 
-    }
 void inserta_final(TNodo **cab, char *identificador_regla, char *produccion) {
     TNodo *aux = crea_nodo(identificador_regla, produccion);
     if (aux) {
@@ -161,7 +78,7 @@ void inserta_finalNuevo(TNodoNuevo **cab, char *identificador_regla, char *produ
         perror("Error al asignar memoria para el nodo");
         exit(EXIT_FAILURE);
     }
-    nuevo_nodo->identificador_regla = strdup(identificador_regla); 
+    nuevo_nodo->identificador_regla = strdup(identificador_regla);
     nuevo_nodo->producciones = (char **)malloc(sizeof(char *)); 
     nuevo_nodo->producciones[0] = strdup(produccion); 
     nuevo_nodo->num_producciones = 1; 
@@ -201,17 +118,8 @@ TNodo* leer_archivo(char *nombre_archivo) {
     }
     fclose(archivo);
     return cabeza;
-    return cabeza;
 }
 
-void imprime(TNodo *cab) 
-{
-    TNodo *aux = cab;
-    printf("Lista impresa en terminal:\n");
-    while (aux != NULL) 
-    {
-        printf("identificador: %s, produccion: %s\n", aux->identificador_regla, aux->produccion);
-        aux = aux->sig;
 void imprime(TNodo *cab) {
     TNodo *aux = cab;
     printf("Lista impresa en terminal:\n");
@@ -223,16 +131,15 @@ void imprime(TNodo *cab) {
 
 void juntar_producciones(TNodo **cab, TNodoNuevo **cabN) {
     TNodo *corre = *cab;
-    TNodo *anterior = NULL;
     while (corre) {
         TNodoNuevo *existente = *cabN;
         while (existente != NULL && strcmp(existente->identificador_regla, corre->identificador_regla) != 0) {
             existente = existente->sig;
         }
 
-        if (existente == NULL)
+        if (existente == NULL) {
             inserta_finalNuevo(cabN, corre->identificador_regla, corre->produccion);
-        else {
+        } else {
             existente->producciones = realloc(existente->producciones, (existente->num_producciones + 1) * sizeof(char *));
             if (existente->producciones != NULL) {
                 existente->producciones[existente->num_producciones] = strdup(corre->produccion);
@@ -242,21 +149,11 @@ void juntar_producciones(TNodo **cab, TNodoNuevo **cabN) {
 
         TNodo *temp = corre;
         corre = corre->sig;
-
-        if (anterior == NULL)
-            *cab = corre;
-        else    
-            anterior->sig = corre;
-
         free(temp->identificador_regla);
         free(temp->produccion);
         free(temp);
-
-        if (anterior == NULL)
-            anterior = *cab;
-        else
-            anterior = anterior->sig;
     }
+    *cab = NULL; 
 }
 
 void eliminar_recursividad(TNodoNuevo **cab1, TNodoNuevo **cab2) {
@@ -346,5 +243,3 @@ void liberar_lista_nueva(TNodoNuevo *cab) {
         free(temp);
     }
 }
-
-
